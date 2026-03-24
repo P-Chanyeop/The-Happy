@@ -1,0 +1,138 @@
+{
+  "settings": {
+    "default_manager": "온라인",
+    "excel_columns": {
+      "order_date": 0,
+      "name": 1,
+      "address": 2,
+      "phone": 3,
+      "product": 4,
+      "option": 5,
+      "quantity": 6,
+      "zipcode": 7,
+      "message": 8
+    }
+  },
+  "vendors": {
+    "1000명일원": {
+      "name": "1000명일원",
+      "sheet_name": "1000명일원",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1500이도수산_홍합": {
+      "name": "홍합",
+      "sheet_name": "p1500이도수산_홍합",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1455고향시래기_우거지": {
+      "name": "우거지",
+      "sheet_name": "p1455고향시래기_우거지",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "1100송하식품_명태회": {
+      "name": "명태회",
+      "sheet_name": "1100송하식품_명태회",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "1130한림푸드_김치": {
+      "name": "김치",
+      "sheet_name": "1130한림푸드_김치",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1300정탑농산_건고추": {
+      "name": "건고추",
+      "sheet_name": "p1300정탑농산_건고추",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1300강화대유_새우젓": {
+      "name": "새우젓",
+      "sheet_name": "p1300강화대유_새우젓",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "1140와촌농장_부추": {
+      "name": "부추",
+      "sheet_name": "1140와촌농장_부추",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1400창성_마늘": {
+      "name": "마늘",
+      "sheet_name": "p1400창성_마늘",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "1430무진농산_더덕": {
+      "name": "더덕",
+      "sheet_name": "1430무진농산_더덕",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1500제이제이아이_제주당근,무": {
+      "name": "제주당근,무",
+      "sheet_name": "p1500제이제이아이_제주당근,무",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1500우공_고춧가루": {
+      "name": "고춧가루",
+      "sheet_name": "p1500우공_고춧가루",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1500한파밍_대파": {
+      "name": "대파",
+      "sheet_name": "p1500한파밍_대파",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1500경영푸드_수산물": {
+      "name": "수산물",
+      "sheet_name": "p1500경영푸드_수산물",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    },
+    "p1700돌하루방_월동무": {
+      "name": "월동무",
+      "sheet_name": "p1700돌하루방_월동무",
+      "google_sheet_url": "",
+      "google_sheet_gid": "",
+      "default_manager": "온라인",
+      "products": {}
+    }
+  }
+}
