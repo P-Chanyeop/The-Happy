@@ -3,8 +3,12 @@ from tkinter import ttk, filedialog, messagebox
 import json
 import os
 import openpyxl
+from openpyxl.styles import PatternFill
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "matching_config.json")
+BASE_DIR = os.getcwd()
+CONFIG_PATH = os.path.join(BASE_DIR, "matching_config.json")
+RED_FILL = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+GREEN_FILL = PatternFill(start_color="00FF00", end_color="00FF00", fill_type="solid")
 
 DEFAULT_CONFIG = {
     "settings": {
@@ -15,7 +19,8 @@ DEFAULT_CONFIG = {
             "message": 8
         }
     },
-    "vendors": {}
+    "vendors": {},
+    "excluded_products": []
 }
 
 
@@ -77,6 +82,7 @@ class App(tk.Tk):
         # 태그 색상
         self.order_tree.tag_configure("unmatched", background="#ffcccc")
         self.order_tree.tag_configure("matched", background="#ccffcc")
+        self.order_tree.tag_configure("excluded", background="#dddddd")
 
         bottom = ttk.Frame(self.tab_order)
         bottom.pack(fill="x", padx=5, pady=5)
@@ -107,9 +113,14 @@ class App(tk.Tk):
                 "product": str(row[col["product"]] or ""),
                 "option": str(row[col["option"]] or ""),
                 "quantity": row[col["quantity"]] or 0,
+                "zipcode": str(row[col["zipcode"]] or "") if col.get("zipcode") is not None else "",
                 "message": str(row[col["message"]] or ""),
                 "vendor": None,
+                "vendor_id": None,
                 "item_name": None,
+                "shipping_type": None,
+                "shipping_fee": None,
+                "excluded": False,
             })
         self._refresh_order_tree()
         self.lbl_status.config(text=f"총 {len(self.orders)}건 로드됨")
@@ -117,20 +128,30 @@ class App(tk.Tk):
     def _refresh_order_tree(self):
         self.order_tree.delete(*self.order_tree.get_children())
         for o in self.orders:
-            tag = "matched" if o["vendor"] else "unmatched"
+            if o["excluded"]:
+                tag = "excluded"
+            elif o["vendor"]:
+                tag = "matched"
+            else:
+                tag = "unmatched"
             self.order_tree.insert("", "end", values=(
                 o["date"], o["name"], o["address"], o["phone"],
                 o["product"], o["option"], o["quantity"], o["message"],
-                o["vendor"] or "미매칭", o["item_name"] or ""
+                "비대상" if o["excluded"] else (o["vendor"] or "미매칭"),
+                o["item_name"] or ""
             ), tags=(tag,))
 
     def _build_matching_lookup(self):
-        """상품명/옵션이름 → (vendor_id, item_name) 매핑 딕셔너리 생성"""
+        """상품명/옵션이름 → (vendor_id, vendor_name, item_name, ship_type, ship_fee) 매핑"""
         lookup = {}
         for vid, v in self.config_data.get("vendors", {}).items():
             for keyword, pinfo in v.get("products", {}).items():
-                item = pinfo["item_name"] if isinstance(pinfo, dict) else pinfo
-                lookup[keyword] = (vid, v["name"], item)
+                if isinstance(pinfo, dict):
+                    lookup[keyword] = (vid, v["name"], pinfo["item_name"],
+                                       pinfo.get("shipping_type", "free"),
+                                       pinfo.get("shipping_fee"))
+                else:
+                    lookup[keyword] = (vid, v["name"], pinfo, "free", None)
         return lookup
 
     def _run_matching(self):
@@ -138,18 +159,35 @@ class App(tk.Tk):
             messagebox.showwarning("알림", "엑셀을 먼저 로드하세요")
             return
         lookup = self._build_matching_lookup()
+        excluded = set(self.config_data.get("excluded_products", []))
         matched = 0
+        excluded_cnt = 0
         for o in self.orders:
             key = o["option"] if o["option"] else o["product"]
-            if key in lookup:
-                _, o["vendor"], o["item_name"] = lookup[key]
+            if key in excluded:
+                o["vendor"] = None
+                o["item_name"] = None
+                o["shipping_type"] = None
+                o["shipping_fee"] = None
+                o["excluded"] = True
+                excluded_cnt += 1
+            elif key in lookup:
+                vid, o["vendor"], o["item_name"], o["shipping_type"], o["shipping_fee"] = lookup[key]
+                o["vendor_id"] = vid
+                o["excluded"] = False
                 matched += 1
             else:
                 o["vendor"] = None
+                o["vendor_id"] = None
                 o["item_name"] = None
+                o["shipping_type"] = None
+                o["shipping_fee"] = None
+                o["excluded"] = False
         self._refresh_order_tree()
-        unmatched = len(self.orders) - matched
-        msg = f"매칭 완료: {matched}건 성공"
+        unmatched = len(self.orders) - matched - excluded_cnt
+        msg = f"매칭: {matched}건 성공"
+        if excluded_cnt:
+            msg += f", {excluded_cnt}건 비대상"
         if unmatched:
             msg += f", {unmatched}건 미매칭"
         self.lbl_status.config(text=msg)
@@ -162,27 +200,165 @@ class App(tk.Tk):
         path = filedialog.asksaveasfilename(defaultextension=".xlsx", initialfile="부반장제어_임시.xlsx")
         if not path:
             return
-        wb = openpyxl.Workbook()
-        vendors_data = {}
-        for o in self.orders:
-            vname = o["vendor"] or "미매칭"
-            vendors_data.setdefault(vname, []).append(o)
 
-        first = True
-        for vname, rows in vendors_data.items():
-            ws = wb.active if first else wb.create_sheet()
-            first = False
-            ws.title = vname[:31]
-            ws.append(["상호", "주소", "전화번호", "품목", "수량", "택배비", "송장번호", "담당", "특이사항"])
-            mgr = self.config_data["settings"].get("default_manager", "온라인")
+        # 원본 부반장제어 파일 복사해서 사용
+        src = os.path.join(BASE_DIR, "부반장제어파일 계속수정.xlsx")
+        if os.path.exists(src):
+            wb = openpyxl.load_workbook(src)
+        else:
+            messagebox.showerror("오류", "원본 부반장제어 파일이 없습니다.\n'부반장제어파일 계속수정.xlsx'를 프로그램 폴더에 넣어주세요.")
+            return
+
+        # 업체별(vendor_id) 분류
+        vendors_data = {}
+        unmatched = []
+        for o in self.orders:
+            if o["excluded"]:
+                continue
+            vid = o.get("vendor_id")
+            if vid:
+                vendors_data.setdefault(vid, []).append(o)
+            else:
+                unmatched.append(o)
+
+        # 미매칭 시트를 맨 앞에 추가
+        ws_um = wb.create_sheet("미매칭", 0)
+        ws_um.append(["수취인", "주소", "전화번호", "상품명", "옵션이름", "수량", "배송메세지"])
+        for o in unmatched:
+            ws_um.append([o["name"], o["address"], o["phone"],
+                          o["product"], o["option"], o["quantity"], o["message"]])
+
+        # 각 업체 시트에 데이터 입력
+        for vid, rows in vendors_data.items():
+            v = self.config_data["vendors"].get(vid, {})
+            sheet_name = v.get("sheet_name", "")
+            if sheet_name not in wb.sheetnames:
+                continue
+            ws = wb[sheet_name]
+
+            # 2행 헤더에서 컬럼 위치 파악
+            headers = [str(ws.cell(row=2, column=c).value or "").strip() for c in range(1, ws.max_column + 1)]
+
+            def find_col(names):
+                for n in names:
+                    for i, h in enumerate(headers):
+                        if h == n:
+                            return i + 1  # 1-based
+                return None
+
+            c_name = find_col(["상호"])
+            c_addr = find_col(["주소"])
+            c_phone = find_col(["전화번호"])
+            c_item = find_col(["품목"])
+            c_qty = find_col(["수량"])
+            c_ship = find_col(["택배비"])
+            c_zip = find_col(["우편번호"])
+            c_mgr = find_col(["담당", "담당자"])
+            c_note = find_col(["특이사항"])
+
+            mgr = v.get("default_manager") or self.config_data["settings"].get("default_manager", "온라인")
+
+            # 기존 데이터 아래 빈 행 찾기 (3행부터)
+            start_row = 3
+            for r in range(3, ws.max_row + 2):
+                if all(ws.cell(row=r, column=c).value is None for c in range(1, len(headers) + 1)):
+                    start_row = r
+                    break
+
+            row_num = start_row
             for o in rows:
-                ws.append([o["name"], o["address"], o["phone"], o["item_name"] or "", o["quantity"], "", "", mgr, o["message"]])
+                ship_fee = ""
+                ship_type = o.get("shipping_type", "free")
+                if ship_type in ("fixed", "variable") and o.get("shipping_fee"):
+                    ship_fee = o["shipping_fee"]
+
+                if c_name: ws.cell(row=row_num, column=c_name, value=o["name"])
+                if c_addr: ws.cell(row=row_num, column=c_addr, value=o["address"])
+                if c_phone: ws.cell(row=row_num, column=c_phone, value=o["phone"])
+                if c_item: ws.cell(row=row_num, column=c_item, value=o["item_name"] or "")
+                if c_qty: ws.cell(row=row_num, column=c_qty, value=o["quantity"])
+                if c_ship: ws.cell(row=row_num, column=c_ship, value=ship_fee)
+                if c_zip: ws.cell(row=row_num, column=c_zip, value=o.get("zipcode", ""))
+                if c_mgr: ws.cell(row=row_num, column=c_mgr, value=mgr)
+                if c_note: ws.cell(row=row_num, column=c_note, value=o["message"])
+
+                if ship_type in ("fixed", "variable") and ship_fee and c_ship:
+                    ws.cell(row=row_num, column=c_ship).fill = RED_FILL
+
+                row_num += 1
 
         wb.save(path)
         messagebox.showinfo("저장 완료", f"부반장제어 파일 저장: {path}")
 
     def _send_to_sheets(self):
-        messagebox.showinfo("안내", "구글시트 전송 기능은 Google API 인증 설정 후 활성화됩니다.")
+        try:
+            import gspread
+            from google.oauth2.service_account import Credentials
+        except ImportError:
+            messagebox.showerror("오류", "gspread, google-auth 패키지를 설치해주세요.\npip install gspread google-auth")
+            return
+
+        cred_path = os.path.join(BASE_DIR, "credentials.json")
+        if not os.path.exists(cred_path):
+            messagebox.showerror("오류", f"Google 서비스 계정 인증 파일이 필요합니다.\n{cred_path}")
+            return
+
+        matched_orders = [o for o in self.orders if o["vendor"] and not o["excluded"]]
+        if not matched_orders:
+            messagebox.showwarning("알림", "전송할 매칭된 주문이 없습니다.")
+            return
+
+        try:
+            scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+            creds = Credentials.from_service_account_file(cred_path, scopes=scopes)
+            gc = gspread.authorize(creds)
+
+            # 업체별 분류
+            vendors_data = {}
+            for o in matched_orders:
+                vid = o.get("vendor_id")
+                vendors_data.setdefault(vid, []).append(o)
+
+            mgr = self.config_data["settings"].get("default_manager", "온라인")
+            sent = 0
+            for vid, rows in vendors_data.items():
+                v = self.config_data["vendors"].get(vid, {})
+                url = v.get("google_sheet_url", "")
+                if not url:
+                    continue
+                sh = gc.open_by_url(url)
+                try:
+                    ws = sh.worksheet("오늘의주문")
+                except gspread.WorksheetNotFound:
+                    ws = sh.sheet1
+
+                # 3행부터 기존 데이터 전부 지우고 새로 쓰기
+                last_row = len(ws.get_all_values())
+                if last_row >= 3:
+                    ws.batch_clear([f"A3:I{last_row}"])
+
+                new_rows = []
+                logen_total = 0
+                for o in rows:
+                    ship_fee = ""
+                    if o.get("shipping_type") in ("fixed", "variable") and o.get("shipping_fee"):
+                        ship_fee = o["shipping_fee"]
+                    new_rows.append([o["name"], o["address"], o["phone"],
+                                     o["item_name"] or "", o["quantity"],
+                                     ship_fee, "", mgr, o["message"]])
+                    if o.get("shipping_type") == "logen_calc":
+                        logen_total += (o["quantity"] if isinstance(o["quantity"], (int, float)) else 1)
+
+                if logen_total > 0:
+                    new_rows.append(["", "", "", "로젠택배", logen_total, "", "", mgr, ""])
+
+                if new_rows:
+                    ws.update(values=new_rows, range_name="A3")
+                    sent += len(rows)
+
+            messagebox.showinfo("전송 완료", f"구글시트에 {sent}건 전송 완료")
+        except Exception as e:
+            messagebox.showerror("전송 오류", str(e))
 
     # ── 매칭 관리 탭 ──
     def _build_matching_tab(self):
@@ -227,6 +403,7 @@ class App(tk.Tk):
         btns = ttk.Frame(form)
         btns.pack(fill="x", padx=5, pady=2)
         ttk.Button(btns, text="추가", command=self._add_match).pack(side="left", padx=2)
+        ttk.Button(btns, text="선택 수정", command=self._update_match).pack(side="left", padx=2)
         ttk.Button(btns, text="선택 삭제", command=self._del_match).pack(side="left", padx=2)
 
         self.match_tree.bind("<<TreeviewSelect>>", self._on_match_select)
@@ -245,7 +422,10 @@ class App(tk.Tk):
             if v["name"] == vname:
                 for kw, pinfo in v.get("products", {}).items():
                     if isinstance(pinfo, dict):
-                        self.match_tree.insert("", "end", values=(kw, pinfo.get("item_name", ""), pinfo.get("shipping_type", "free"), pinfo.get("shipping_fee", "")))
+                        self.match_tree.insert("", "end", values=(
+                            kw, pinfo.get("item_name", ""),
+                            pinfo.get("shipping_type", "free"),
+                            pinfo.get("shipping_fee", "")))
                     else:
                         self.match_tree.insert("", "end", values=(kw, pinfo, "free", ""))
                 break
@@ -276,7 +456,36 @@ class App(tk.Tk):
         if not kw or not item:
             messagebox.showwarning("알림", "상품키워드와 품목명을 입력하세요")
             return
+        if kw in self.config_data["vendors"][vid].get("products", {}):
+            messagebox.showwarning("알림", f"'{kw}' 키워드가 이미 존재합니다. '선택 수정'을 사용하세요.")
+            return
         self.config_data["vendors"][vid]["products"][kw] = {
+            "item_name": item,
+            "shipping_type": self.match_ship_type.get(),
+            "shipping_fee": self.match_ship_amt.get().strip() or None
+        }
+        save_config(self.config_data)
+        self._refresh_match_tree()
+
+    def _update_match(self):
+        sel = self.match_tree.selection()
+        if not sel:
+            messagebox.showwarning("알림", "수정할 항목을 선택하세요")
+            return
+        old_kw = self.match_tree.item(sel[0], "values")[0]
+        vname = self.match_vendor_var.get()
+        vid = self._find_vendor_id(vname)
+        if not vid:
+            return
+        new_kw = self.match_keyword.get().strip()
+        item = self.match_item.get().strip()
+        if not new_kw or not item:
+            messagebox.showwarning("알림", "상품키워드와 품목명을 입력하세요")
+            return
+        # 키워드가 변경된 경우 기존 삭제
+        if old_kw != new_kw and old_kw in self.config_data["vendors"][vid]["products"]:
+            del self.config_data["vendors"][vid]["products"][old_kw]
+        self.config_data["vendors"][vid]["products"][new_kw] = {
             "item_name": item,
             "shipping_type": self.match_ship_type.get(),
             "shipping_fee": self.match_ship_amt.get().strip() or None
@@ -398,6 +607,43 @@ class App(tk.Tk):
             e.pack(side="left")
             e.insert(0, str(self.config_data["settings"]["excel_columns"].get(key, default)))
             self.col_entries[key] = e
+
+        # 비대상 상품 관리
+        ex_frame = ttk.LabelFrame(self.tab_settings, text="비대상 상품 (발주 제외 품목)")
+        ex_frame.pack(fill="x", padx=10, pady=10)
+
+        self.excluded_list = tk.Listbox(ex_frame, height=6)
+        self.excluded_list.pack(fill="x", padx=5, pady=2)
+        for item in self.config_data.get("excluded_products", []):
+            self.excluded_list.insert("end", item)
+
+        ex_input = ttk.Frame(ex_frame)
+        ex_input.pack(fill="x", padx=5, pady=2)
+        self.excluded_entry = ttk.Entry(ex_input, width=30)
+        self.excluded_entry.pack(side="left", padx=2)
+        ttk.Button(ex_input, text="추가", command=self._add_excluded).pack(side="left", padx=2)
+        ttk.Button(ex_input, text="선택 삭제", command=self._del_excluded).pack(side="left", padx=2)
+
+    def _add_excluded(self):
+        kw = self.excluded_entry.get().strip()
+        if not kw:
+            return
+        if "excluded_products" not in self.config_data:
+            self.config_data["excluded_products"] = []
+        if kw not in self.config_data["excluded_products"]:
+            self.config_data["excluded_products"].append(kw)
+            self.excluded_list.insert("end", kw)
+            save_config(self.config_data)
+        self.excluded_entry.delete(0, "end")
+
+    def _del_excluded(self):
+        sel = self.excluded_list.curselection()
+        if not sel:
+            return
+        kw = self.excluded_list.get(sel[0])
+        self.config_data.get("excluded_products", []).remove(kw)
+        self.excluded_list.delete(sel[0])
+        save_config(self.config_data)
 
     def _save_settings(self):
         self.config_data["settings"]["default_manager"] = self.set_mgr.get().strip()

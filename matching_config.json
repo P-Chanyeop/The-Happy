@@ -20,7 +20,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        null,
+        "한진택배\n\n제주 5,000원 추가 / 도서산간 7,000원 추가 우편번호 우편번호",
+        null,
+        "주문마감 오전10시 우편번호",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "우편번호",
+        "택배비",
+        "담당",
+        "특이사항"
+      ]
     },
     "p1500이도수산_홍합": {
       "name": "홍합",
@@ -28,15 +50,70 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        "발주시간\n10:00\n14:00\n15:00",
+        "택배사 => 홍합, 만디 둘다 롯데\n제주,도서산간 => 3,000원",
+        null,
+        "만디 주문 마감 10시\n주문마감 오후 3시",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당",
+        "특이사항"
+      ]
     },
     "p1455고향시래기_우거지": {
       "name": "우거지",
       "sheet_name": "p1455고향시래기_우거지",
-      "google_sheet_url": "",
+      "google_sheet_url": "https://docs.google.com/spreadsheets/d/1faOuZRbs_9p62PBDIF0Zk_h99IAfyjoB2hCDda1VAC8/edit?gid=1374532361#gid=1374532361",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {
+        "농가염지우거지10키": {
+          "item_name": "염지우거지10kg",
+          "shipping_type": "logen_calc",
+          "shipping_fee": null
+        },
+        "농가우거지10키": {
+          "item_name": "우거지10kg",
+          "shipping_type": "logen_calc",
+          "shipping_fee": null
+        }
+      },
+      "meta_row": [
+        "발주시간\n10:00 \n13:30 \n14:55",
+        "* 택배사 = 한진택배\n* 속지 = 부드러운 우거지 *수율 60~65%\n* 파레트출고 우거지 10,500 시래기 12,000 속지 9,500(1파레트 120개, 배송비별도)\n※ 시래기 파레트 출고 가능일 = 2025.5월 말일경부터,2025.05.12(월)출고건부터 시래기 꼭지없음\n※ 우거지 파레트 출고 가능일 = 25년 5월 15일 이후부터",
+        null,
+        "로젠택배비 추가는 \"박스 수량 당\" 입니다.\n\n특이사항 : 가급적이면 배송메모만 써 주세요",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "주문번호",
+        "담당",
+        "특이사항"
+      ]
     },
     "1100송하식품_명태회": {
       "name": "명태회",
@@ -44,7 +121,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        null,
+        "택배 발송 =>한진택배\n택배비 추가 =>제주도서산간 6,000원",
+        null,
+        "주문마감 오전 11시 40분",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "1130한림푸드_김치": {
       "name": "김치",
@@ -52,7 +151,35 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {
+        "포기김치10키": {
+          "item_name": "포기김치10키",
+          "shipping_type": "variable",
+          "shipping_fee": "3000"
+        }
+      },
+      "meta_row": [
+        "김치브랜드 =>\n택배 발송 =>\n\n택배비 추가 =>",
+        "수미향\n로젠택배\n\n제주도서산간 4,000원",
+        null,
+        "주문마감 오전 11시 30분",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1300정탑농산_건고추": {
       "name": "건고추",
@@ -60,7 +187,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        null,
+        "택배 발송 =>롯데택배\n택배비 추가 =>제주도서산간 3,000 원\n\n2025.09.05(금)기준 총수량 18톤(이후 재고없음)_한정판매",
+        null,
+        "* 건고추 1kg * 2봉 = 10키로 1박스\n* 건고추 1kg * 3봉 = 20키로 1박스\n* 건고추 1kg * 4봉 = 25키로 1박스\n* 건고추 6kg 1봉(벌크포장) = 1박스\n* 건고추 택배비 3,000 원 은 박스당(택배비에 3,000 원 적으면 됩니다)\n**** 선물세트 택배비는 3,300 원(부가세 포함)",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1300강화대유_새우젓": {
       "name": "새우젓",
@@ -68,7 +217,35 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {
+        "국산추젓1키": {
+          "item_name": "국산추젓1키",
+          "shipping_type": "fixed",
+          "shipping_fee": "1"
+        }
+      },
+      "meta_row": [
+        "택배비 별도 상품",
+        "붉은 색칠한 품목은 무료배송 상품\n색칠되지 않은 상품은 \"택배비\" 란에 (+1) 추가\n제주도, 도서산간은 추가는 \"제주도,도서산간\" 란에 (+1) 추가\n\n\n",
+        null,
+        "택배사 : 로젠택배\n\n** 주문 마감은 오전에 1차 전송, 오후 1시 30분 마감.\n** 새우젓 5kg, 10kg 기본 아이스박스 발송, 깡통이나 플라스틱 요청시 특이사항에 적어주세요\n\n\n",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "1140와촌농장_부추": {
       "name": "부추",
@@ -76,7 +253,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        "택배 발송 =>\n택배비추가 =>",
+        "한진택배\n",
+        null,
+        "주문마감 오전 11시 40분 이후주문건은 문의바랍니다",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1400창성_마늘": {
       "name": "마늘",
@@ -84,7 +283,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        "발주시간\n11:30\n13:30",
+        "택배 발송 =>CJ대한통운\n택배비 추가 =>옹진군 6,000원 / 제주 3,000 / 기타 지역 확인중\n박스타입 =>1~3kg 극소 / 4~6kg 소 / 7~10kg 중\n가격인상일.2025.11.12(수)",
+        null,
+        "주문마감 오후 13시 / 추가건이 있을 경우 오후 2시까지(맞춰가는중)\n다진마늘 발주 후 다음날 출고(생산시간으로 인하여) 됩니다\n1키로포장 택배비 5키로미만 3,000 5키로이상 3,500(현재 입고가 택배비 포함가격임)\n'중' 박스 반품비용 4,500원",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "1430무진농산_더덕": {
       "name": "더덕",
@@ -92,7 +313,35 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {
+        "생들기름300": {
+          "item_name": "생들기름300",
+          "shipping_type": "free",
+          "shipping_fee": null
+        }
+      },
+      "meta_row": [
+        "발주시간\n14:30",
+        "택배 발송 =>롯데택배\n\n택배비 추가 =>제주도서산간 3,000원",
+        null,
+        "주문마감 오후 2시 30분",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1500제이제이아이_제주당근,무": {
       "name": "제주당근,무",
@@ -100,7 +349,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        "택배사 =>\n택배비 추가 =>",
+        "로젠택배\n도서산간 5,500원(옹진군 택배추가비용)",
+        null,
+        "주문마감 오후 5시",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1500우공_고춧가루": {
       "name": "고춧가루",
@@ -108,7 +379,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        "택배비 별도임",
+        "1~5kg : 3,000원\n6~10kg : 3,800원\n11~19kg : 4,200원\n20kg : 무료",
+        null,
+        "주문마감 오후 3시",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1500한파밍_대파": {
       "name": "대파",
@@ -116,7 +409,29 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        "발주시간\n15:00",
+        "택배 발송 =>롯데택배\n택배비 별도 상품 =>적채1통\n택배비 추가 =>제주도 3,000 원 / 도서산간 5,000 원(완도군,울릉군,백령도) 또는 5,500 원",
+        null,
+        "주문마감 오후3시\n\n파렛트 양파15키(60망)25,000 당근10키(84박)8,300\n대파10키(50박)18,500 마늘쫑(80박)30,000 파렛트이동전표",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1500경영푸드_수산물": {
       "name": "수산물",
@@ -124,15 +439,63 @@
       "google_sheet_url": "",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        null,
+        "모든 상품 : 무료배송 / 면세상품\n택배 : 롯데",
+        null,
+        "주문 마감 : 15시\n수령일 입력 방법 : 00-00 / ex) 11-21 로 입력하면 자동으로 11월 21일로 변경됩니다.",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     },
     "p1700돌하루방_월동무": {
       "name": "월동무",
       "sheet_name": "p1700돌하루방_월동무",
-      "google_sheet_url": "",
+      "google_sheet_url": "온라인",
       "google_sheet_gid": "",
       "default_manager": "온라인",
-      "products": {}
+      "products": {},
+      "meta_row": [
+        "택배사 =>\n택배비 추가 =>",
+        "로젠택배\n도서산간 5,500원(옹진군 택배추가비용)",
+        null,
+        "주문마감 오후 5시",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "headers": [
+        "상호",
+        "주소",
+        "전화번호",
+        "품목",
+        "수량",
+        "택배비",
+        "송장번호",
+        "담당자",
+        "특이사항"
+      ]
     }
-  }
+  },
+  "excluded_products": [
+    "자체배송 상품",
+    "단순 포장재"
+  ]
 }
