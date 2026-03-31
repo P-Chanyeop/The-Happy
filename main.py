@@ -41,6 +41,9 @@ class App(tk.Tk):
         super().__init__()
         self.title("더해피 발주 자동분류")
         self.geometry("1100x700")
+        ico = os.path.join(os.getcwd(), "softcat2.ico")
+        if os.path.exists(ico):
+            self.iconbitmap(ico)
         self.config_data = load_config()
         self.orders = []
 
@@ -72,12 +75,21 @@ class App(tk.Tk):
         self.lbl_file.pack(side="left", padx=10)
 
         # 주문 테이블
+        tree_frame = ttk.Frame(self.tab_order)
+        tree_frame.pack(fill="both", expand=True, padx=5)
         cols = ("주문일시", "수취인", "주소", "전화번호", "상품명", "옵션이름", "수량", "배송메세지", "매칭업체", "품목")
-        self.order_tree = ttk.Treeview(self.tab_order, columns=cols, show="headings", height=20)
+        self.order_tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=20)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.order_tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.order_tree.xview)
+        self.order_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.order_tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
         for c in cols:
             self.order_tree.heading(c, text=c)
             self.order_tree.column(c, width=100 if c not in ("주소",) else 200)
-        self.order_tree.pack(fill="both", expand=True, padx=5)
 
         # 태그 색상
         self.order_tree.tag_configure("unmatched", background="#ffcccc")
@@ -98,7 +110,14 @@ class App(tk.Tk):
         if not path:
             return
         self.lbl_file.config(text=os.path.basename(path))
-        wb = openpyxl.load_workbook(path)
+        from openpyxl.styles.fills import Fill
+        _orig_init = Fill.__init__
+        if _orig_init is object.__init__:
+            Fill.__init__ = lambda self, *a, **kw: None
+        try:
+            wb = openpyxl.load_workbook(path)
+        finally:
+            Fill.__init__ = _orig_init
         ws = wb.active
         self.orders = []
         col = self.config_data["settings"]["excel_columns"]
