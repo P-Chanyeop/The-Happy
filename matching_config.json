@@ -316,8 +316,9 @@
       "products": {
         "생들기름300": {
           "item_name": "생들기름300",
+          "override_qty": 5,
           "shipping_type": "free",
-          "shipping_fee": null
+          "shipping_fee": "None"
         }
       },
       "meta_row": [

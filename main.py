@@ -595,7 +595,7 @@ class App(tk.Tk):
                             kw, pinfo.get("item_name", ""),
                             pinfo.get("override_qty", 1),
                             SHIP_TYPE_LABELS.get(stype, stype),
-                            pinfo.get("shipping_fee", "")))
+                            pinfo.get("shipping_fee") or ""))
                     else:
                         self.match_tree.insert("", "end", values=(kw, pinfo, 1, SHIP_TYPE_LABELS["free"], ""))
                 break
