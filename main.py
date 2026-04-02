@@ -10,6 +10,14 @@ CONFIG_PATH = os.path.join(BASE_DIR, "matching_config.json")
 RED_FILL = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
 GREEN_FILL = PatternFill(start_color="00FF00", end_color="00FF00", fill_type="solid")
 
+SHIP_TYPE_LABELS = {
+    "free": "free(택배비포함)",
+    "fixed": "fixed(고정택배비)",
+    "variable": "variable(조건별택배비)",
+    "logen_calc": "logen_calc(로젠택배계산)",
+}
+SHIP_TYPE_KEYS = {v: k for k, v in SHIP_TYPE_LABELS.items()}
+
 DEFAULT_CONFIG = {
     "settings": {
         "default_manager": "온라인",
@@ -101,9 +109,76 @@ class App(tk.Tk):
 
         self.lbl_status = ttk.Label(bottom, text="")
         self.lbl_status.pack(side="left")
+        ttk.Button(bottom, text="선택 삭제", command=self._del_order).pack(side="left", padx=5)
+        ttk.Button(bottom, text="전체 삭제", command=self._del_all_orders).pack(side="left", padx=5)
         ttk.Button(bottom, text="자동 매칭 실행", command=self._run_matching).pack(side="right", padx=5)
         ttk.Button(bottom, text="부반장제어 저장", command=self._save_temp_excel).pack(side="right", padx=5)
         ttk.Button(bottom, text="구글시트 전송", command=self._send_to_sheets).pack(side="right", padx=5)
+
+        # 더블클릭 수기 수정
+        self.order_tree.bind("<Double-1>", self._on_order_dblclick)
+
+    def _del_order(self):
+        sel = self.order_tree.selection()
+        if not sel:
+            messagebox.showwarning("알림", "삭제할 항목을 선택하세요")
+            return
+        indices = []
+        all_items = self.order_tree.get_children()
+        for s in sel:
+            indices.append(all_items.index(s))
+        for i in sorted(indices, reverse=True):
+            del self.orders[i]
+        self._refresh_order_tree()
+        self.lbl_status.config(text=f"총 {len(self.orders)}건")
+
+    def _del_all_orders(self):
+        if not self.orders:
+            return
+        if messagebox.askyesno("확인", "전체 주문을 삭제하시겠습니까?"):
+            self.orders.clear()
+            self._refresh_order_tree()
+            self.lbl_status.config(text="")
+
+    def _on_order_dblclick(self, event):
+        item = self.order_tree.identify_row(event.y)
+        col = self.order_tree.identify_column(event.x)
+        if not item or not col:
+            return
+        col_idx = int(col.replace("#", "")) - 1
+        cols = ("주문일시", "수취인", "주소", "전화번호", "상품명", "옵션이름", "수량", "배송메세지", "매칭업체", "품목")
+        field_map = {0: "date", 1: "name", 2: "address", 3: "phone",
+                     4: "product", 5: "option", 6: "quantity", 7: "message"}
+        if col_idx not in field_map:
+            return
+        bbox = self.order_tree.bbox(item, col)
+        if not bbox:
+            return
+        old_val = self.order_tree.item(item, "values")[col_idx]
+        entry = ttk.Entry(self.order_tree)
+        entry.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
+        entry.insert(0, old_val)
+        entry.select_range(0, "end")
+        entry.focus()
+
+        all_items = self.order_tree.get_children()
+        order_idx = all_items.index(item)
+        field = field_map[col_idx]
+
+        def _save(e=None):
+            val = entry.get()
+            if field == "quantity":
+                try:
+                    val = int(val)
+                except ValueError:
+                    val = 0
+            self.orders[order_idx][field] = val
+            entry.destroy()
+            self._refresh_order_tree()
+
+        entry.bind("<Return>", _save)
+        entry.bind("<FocusOut>", _save)
+        entry.bind("<Escape>", lambda e: entry.destroy())
 
     def _load_excel(self):
         path = filedialog.askopenfilename(filetypes=[("Excel", "*.xlsx")])
@@ -417,9 +492,9 @@ class App(tk.Tk):
         self.match_item = ttk.Entry(r, width=20)
         self.match_item.pack(side="left", padx=5)
         ttk.Label(r, text="택배비유형:").pack(side="left")
-        self.match_ship_type = ttk.Combobox(r, values=["free", "fixed", "variable", "logen_calc"], width=10, state="readonly")
+        self.match_ship_type = ttk.Combobox(r, values=list(SHIP_TYPE_LABELS.values()), width=25, state="readonly")
         self.match_ship_type.pack(side="left", padx=5)
-        self.match_ship_type.set("free")
+        self.match_ship_type.set(SHIP_TYPE_LABELS["free"])
         ttk.Label(r, text="택배비금액:").pack(side="left")
         self.match_ship_amt = ttk.Entry(r, width=10)
         self.match_ship_amt.pack(side="left", padx=5)
@@ -434,7 +509,7 @@ class App(tk.Tk):
         self._refresh_vendor_lists()
 
     def _refresh_vendor_lists(self):
-        names = [v["name"] for v in self.config_data.get("vendors", {}).values()]
+        names = sorted([v["name"] for v in self.config_data.get("vendors", {}).values()])
         self.match_vendor_cb["values"] = names
         if hasattr(self, "vendor_tree"):
             self._refresh_vendor_tree()
@@ -444,14 +519,15 @@ class App(tk.Tk):
         vname = self.match_vendor_var.get()
         for vid, v in self.config_data.get("vendors", {}).items():
             if v["name"] == vname:
-                for kw, pinfo in v.get("products", {}).items():
+                for kw, pinfo in sorted(v.get("products", {}).items()):
                     if isinstance(pinfo, dict):
+                        stype = pinfo.get("shipping_type", "free")
                         self.match_tree.insert("", "end", values=(
                             kw, pinfo.get("item_name", ""),
-                            pinfo.get("shipping_type", "free"),
+                            SHIP_TYPE_LABELS.get(stype, stype),
                             pinfo.get("shipping_fee", "")))
                     else:
-                        self.match_tree.insert("", "end", values=(kw, pinfo, "free", ""))
+                        self.match_tree.insert("", "end", values=(kw, pinfo, SHIP_TYPE_LABELS["free"], ""))
                 break
 
     def _on_match_select(self, event):
@@ -460,7 +536,7 @@ class App(tk.Tk):
             vals = self.match_tree.item(sel[0], "values")
             self.match_keyword.delete(0, "end"); self.match_keyword.insert(0, vals[0])
             self.match_item.delete(0, "end"); self.match_item.insert(0, vals[1])
-            self.match_ship_type.set(vals[2])
+            self.match_ship_type.set(vals[2])  # 이미 한글 라벨
             self.match_ship_amt.delete(0, "end"); self.match_ship_amt.insert(0, vals[3])
 
     def _find_vendor_id(self, name):
@@ -485,7 +561,7 @@ class App(tk.Tk):
             return
         self.config_data["vendors"][vid]["products"][kw] = {
             "item_name": item,
-            "shipping_type": self.match_ship_type.get(),
+            "shipping_type": SHIP_TYPE_KEYS.get(self.match_ship_type.get(), self.match_ship_type.get()),
             "shipping_fee": self.match_ship_amt.get().strip() or None
         }
         save_config(self.config_data)
@@ -511,7 +587,7 @@ class App(tk.Tk):
             del self.config_data["vendors"][vid]["products"][old_kw]
         self.config_data["vendors"][vid]["products"][new_kw] = {
             "item_name": item,
-            "shipping_type": self.match_ship_type.get(),
+            "shipping_type": SHIP_TYPE_KEYS.get(self.match_ship_type.get(), self.match_ship_type.get()),
             "shipping_fee": self.match_ship_amt.get().strip() or None
         }
         save_config(self.config_data)
@@ -565,7 +641,7 @@ class App(tk.Tk):
 
     def _refresh_vendor_tree(self):
         self.vendor_tree.delete(*self.vendor_tree.get_children())
-        for vid, v in self.config_data.get("vendors", {}).items():
+        for vid, v in sorted(self.config_data.get("vendors", {}).items(), key=lambda x: x[1].get("name", "")):
             self.vendor_tree.insert("", "end", values=(
                 vid, v.get("name", ""), v.get("sheet_name", ""),
                 v.get("google_sheet_url", ""), v.get("default_manager", "")
@@ -636,9 +712,14 @@ class App(tk.Tk):
         ex_frame = ttk.LabelFrame(self.tab_settings, text="비대상 상품 (발주 제외 품목)")
         ex_frame.pack(fill="x", padx=10, pady=10)
 
-        self.excluded_list = tk.Listbox(ex_frame, height=6)
-        self.excluded_list.pack(fill="x", padx=5, pady=2)
-        for item in self.config_data.get("excluded_products", []):
+        ex_list_frame = ttk.Frame(ex_frame)
+        ex_list_frame.pack(fill="x", padx=5, pady=2)
+        ex_vsb = ttk.Scrollbar(ex_list_frame, orient="vertical")
+        self.excluded_list = tk.Listbox(ex_list_frame, height=6, yscrollcommand=ex_vsb.set)
+        ex_vsb.config(command=self.excluded_list.yview)
+        self.excluded_list.pack(side="left", fill="x", expand=True)
+        ex_vsb.pack(side="right", fill="y")
+        for item in sorted(self.config_data.get("excluded_products", [])):
             self.excluded_list.insert("end", item)
 
         ex_input = ttk.Frame(ex_frame)
