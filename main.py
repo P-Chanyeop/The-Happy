@@ -289,7 +289,8 @@ class App(tk.Tk):
                 ship_fee = ""
                 ship_type = o.get("shipping_type", "free")
                 if ship_type in ("fixed", "variable") and o.get("shipping_fee"):
-                    ship_fee = o["shipping_fee"]
+                    raw = str(o["shipping_fee"]).strip().lstrip("'")
+                    ship_fee = int(raw) if raw.isdigit() else raw
 
                 if c_name: ws.cell(row=row_num, column=c_name, value=o["name"])
                 if c_addr: ws.cell(row=row_num, column=c_addr, value=o["address"])
@@ -351,17 +352,21 @@ class App(tk.Tk):
                 except gspread.WorksheetNotFound:
                     ws = sh.sheet1
 
-                # 3행부터 기존 데이터 전부 지우고 새로 쓰기
-                last_row = len(ws.get_all_values())
-                if last_row >= 3:
-                    ws.batch_clear([f"A3:I{last_row}"])
+                # A열(상호명) 기준으로 300행까지 검사하여 마지막 데이터 행 찾기
+                col_a = ws.col_values(1)[:300]
+                start_row = 3
+                for i in range(len(col_a) - 1, -1, -1):
+                    if col_a[i] and str(col_a[i]).strip():
+                        start_row = i + 2  # 0-based → 1-based + 다음행
+                        break
 
                 new_rows = []
                 logen_total = 0
                 for o in rows:
                     ship_fee = ""
                     if o.get("shipping_type") in ("fixed", "variable") and o.get("shipping_fee"):
-                        ship_fee = o["shipping_fee"]
+                        raw = str(o["shipping_fee"]).strip().lstrip("'")
+                        ship_fee = int(raw) if raw.isdigit() else raw
                     new_rows.append([o["name"], o["address"], o["phone"],
                                      o["item_name"] or "", o["quantity"],
                                      ship_fee, "", mgr, o["message"]])
@@ -372,7 +377,7 @@ class App(tk.Tk):
                     new_rows.append(["", "", "", "로젠택배", logen_total, "", "", mgr, ""])
 
                 if new_rows:
-                    ws.update(values=new_rows, range_name="A3")
+                    ws.update(values=new_rows, range_name=f"A{start_row}")
                     sent += len(rows)
 
             messagebox.showinfo("전송 완료", f"구글시트에 {sent}건 전송 완료")
