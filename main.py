@@ -297,16 +297,17 @@ class App(tk.Tk):
             ), tags=(tag,))
 
     def _build_matching_lookup(self):
-        """상품명/옵션이름 → (vendor_id, vendor_name, item_name, ship_type, ship_fee) 매핑"""
+        """상품명/옵션이름 → (vendor_id, vendor_name, item_name, ship_type, ship_fee, override_qty) 매핑"""
         lookup = {}
         for vid, v in self.config_data.get("vendors", {}).items():
             for keyword, pinfo in v.get("products", {}).items():
                 if isinstance(pinfo, dict):
                     lookup[keyword] = (vid, v["name"], pinfo["item_name"],
                                        pinfo.get("shipping_type", "free"),
-                                       pinfo.get("shipping_fee"))
+                                       pinfo.get("shipping_fee"),
+                                       pinfo.get("override_qty", 1))
                 else:
-                    lookup[keyword] = (vid, v["name"], pinfo, "free", None)
+                    lookup[keyword] = (vid, v["name"], pinfo, "free", None, 1)
         return lookup
 
     def _run_matching(self):
@@ -327,8 +328,10 @@ class App(tk.Tk):
                 o["excluded"] = True
                 excluded_cnt += 1
             elif key in lookup:
-                vid, o["vendor"], o["item_name"], o["shipping_type"], o["shipping_fee"] = lookup[key]
+                vid, o["vendor"], o["item_name"], o["shipping_type"], o["shipping_fee"], oq = lookup[key]
                 o["vendor_id"] = vid
+                if oq and oq > 1:
+                    o["quantity"] = oq
                 o["excluded"] = False
                 matched += 1
             else:
@@ -533,11 +536,11 @@ class App(tk.Tk):
         ttk.Button(top, text="새로고침", command=self._refresh_vendor_lists).pack(side="left")
 
         # 매칭 테이블
-        cols = ("상품키워드", "품목명", "택배비유형", "택배비금액")
+        cols = ("상품키워드", "품목명", "수량", "택배비유형", "택배비금액")
         self.match_tree = ttk.Treeview(self.tab_matching, columns=cols, show="headings", height=18)
         for c in cols:
             self.match_tree.heading(c, text=c)
-            self.match_tree.column(c, width=200)
+            self.match_tree.column(c, width=60 if c == "수량" else 200)
         self.match_tree.pack(fill="both", expand=True, padx=5)
         self._make_sortable(self.match_tree)
 
@@ -553,6 +556,10 @@ class App(tk.Tk):
         ttk.Label(r, text="품목명:").pack(side="left")
         self.match_item = ttk.Entry(r, width=20)
         self.match_item.pack(side="left", padx=5)
+        ttk.Label(r, text="수량:").pack(side="left")
+        self.match_qty = ttk.Entry(r, width=5)
+        self.match_qty.pack(side="left", padx=5)
+        self.match_qty.insert(0, "1")
         ttk.Label(r, text="택배비유형:").pack(side="left")
         self.match_ship_type = ttk.Combobox(r, values=list(SHIP_TYPE_LABELS.values()), width=25, state="readonly")
         self.match_ship_type.pack(side="left", padx=5)
@@ -586,10 +593,11 @@ class App(tk.Tk):
                         stype = pinfo.get("shipping_type", "free")
                         self.match_tree.insert("", "end", values=(
                             kw, pinfo.get("item_name", ""),
+                            pinfo.get("override_qty", 1),
                             SHIP_TYPE_LABELS.get(stype, stype),
                             pinfo.get("shipping_fee", "")))
                     else:
-                        self.match_tree.insert("", "end", values=(kw, pinfo, SHIP_TYPE_LABELS["free"], ""))
+                        self.match_tree.insert("", "end", values=(kw, pinfo, 1, SHIP_TYPE_LABELS["free"], ""))
                 break
 
     def _on_match_select(self, event):
@@ -598,8 +606,9 @@ class App(tk.Tk):
             vals = self.match_tree.item(sel[0], "values")
             self.match_keyword.delete(0, "end"); self.match_keyword.insert(0, vals[0])
             self.match_item.delete(0, "end"); self.match_item.insert(0, vals[1])
-            self.match_ship_type.set(vals[2])  # 이미 한글 라벨
-            self.match_ship_amt.delete(0, "end"); self.match_ship_amt.insert(0, vals[3])
+            self.match_qty.delete(0, "end"); self.match_qty.insert(0, vals[2])
+            self.match_ship_type.set(vals[3])
+            self.match_ship_amt.delete(0, "end"); self.match_ship_amt.insert(0, vals[4])
 
     def _find_vendor_id(self, name):
         for vid, v in self.config_data.get("vendors", {}).items():
@@ -623,6 +632,7 @@ class App(tk.Tk):
             return
         self.config_data["vendors"][vid]["products"][kw] = {
             "item_name": item,
+            "override_qty": int(self.match_qty.get() or 1),
             "shipping_type": SHIP_TYPE_KEYS.get(self.match_ship_type.get(), self.match_ship_type.get()),
             "shipping_fee": self.match_ship_amt.get().strip() or None
         }
@@ -649,6 +659,7 @@ class App(tk.Tk):
             del self.config_data["vendors"][vid]["products"][old_kw]
         self.config_data["vendors"][vid]["products"][new_kw] = {
             "item_name": item,
+            "override_qty": int(self.match_qty.get() or 1),
             "shipping_type": SHIP_TYPE_KEYS.get(self.match_ship_type.get(), self.match_ship_type.get()),
             "shipping_fee": self.match_ship_amt.get().strip() or None
         }
