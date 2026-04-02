@@ -54,6 +54,7 @@ class App(tk.Tk):
             self.iconbitmap(ico)
         self.config_data = load_config()
         self.orders = []
+        self._sort_states = {}  # tree_id -> {col: 'asc'|'desc'|None}
 
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=5, pady=5)
@@ -72,6 +73,51 @@ class App(tk.Tk):
         self._build_matching_tab()
         self._build_vendor_tab()
         self._build_settings_tab()
+
+    def _make_sortable(self, tree):
+        """Treeview 헤더 클릭 시 오름차순→내림차순→원래순서 토글"""
+        tid = id(tree)
+        self._sort_states[tid] = {}
+        for col in tree["columns"]:
+            tree.heading(col, command=lambda c=col, t=tree, ti=tid: self._sort_column(t, ti, c))
+
+    def _sort_column(self, tree, tid, col):
+        state = self._sort_states[tid].get(col)
+        # 다른 컬럼 정렬 해제 표시 초기화
+        for c in tree["columns"]:
+            tree.heading(c, text=c.replace(" ▲", "").replace(" ▼", ""))
+        if state is None:
+            reverse = False
+            self._sort_states[tid] = {col: "asc"}
+            suffix = " ▲"
+        elif state == "asc":
+            reverse = True
+            self._sort_states[tid] = {col: "desc"}
+            suffix = " ▼"
+        else:
+            self._sort_states[tid] = {}
+            # 원래 순서 복원 — 각 트리뷰의 refresh 호출
+            if tree is self.order_tree:
+                self._refresh_order_tree()
+            elif tree is self.match_tree:
+                self._refresh_match_tree()
+            elif tree is self.vendor_tree:
+                self._refresh_vendor_tree()
+            return
+
+        items = [(tree.item(k, "values"), k) for k in tree.get_children()]
+        col_idx = list(tree["columns"]).index(col)
+        def sort_key(x):
+            v = x[0][col_idx]
+            try:
+                return (0, float(v))
+            except (ValueError, TypeError):
+                return (1, str(v))
+        items.sort(key=sort_key, reverse=reverse)
+        for i, (_, k) in enumerate(items):
+            tree.move(k, "", i)
+        label = col + suffix
+        tree.heading(col, text=label)
 
     # ── 발주 처리 탭 ──
     def _build_order_tab(self):
@@ -103,6 +149,7 @@ class App(tk.Tk):
         self.order_tree.tag_configure("unmatched", background="#ffcccc")
         self.order_tree.tag_configure("matched", background="#ccffcc")
         self.order_tree.tag_configure("excluded", background="#dddddd")
+        self._make_sortable(self.order_tree)
 
         bottom = ttk.Frame(self.tab_order)
         bottom.pack(fill="x", padx=5, pady=5)
@@ -478,6 +525,7 @@ class App(tk.Tk):
             self.match_tree.heading(c, text=c)
             self.match_tree.column(c, width=200)
         self.match_tree.pack(fill="both", expand=True, padx=5)
+        self._make_sortable(self.match_tree)
 
         # 입력 폼
         form = ttk.LabelFrame(self.tab_matching, text="매칭 추가/수정")
@@ -614,6 +662,7 @@ class App(tk.Tk):
             w = 120 if c != "구글시트URL" else 300
             self.vendor_tree.column(c, width=w)
         self.vendor_tree.pack(fill="both", expand=True, padx=5, pady=5)
+        self._make_sortable(self.vendor_tree)
 
         form = ttk.LabelFrame(self.tab_vendor, text="업체 추가/수정")
         form.pack(fill="x", padx=5, pady=5)
