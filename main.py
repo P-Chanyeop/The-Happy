@@ -128,6 +128,11 @@ class App(tk.Tk):
         self.lbl_file = ttk.Label(top, text="파일을 선택하세요")
         self.lbl_file.pack(side="left", padx=10)
 
+        ttk.Label(top, text="검색:").pack(side="left", padx=(20, 0))
+        self.order_search_var = tk.StringVar()
+        self.order_search_var.trace_add("write", lambda *_: self._refresh_order_tree())
+        ttk.Entry(top, textvariable=self.order_search_var, width=20).pack(side="left", padx=5)
+
         # 주문 테이블
         tree_frame = ttk.Frame(self.tab_order)
         tree_frame.pack(fill="both", expand=True, padx=5)
@@ -268,7 +273,16 @@ class App(tk.Tk):
 
     def _refresh_order_tree(self):
         self.order_tree.delete(*self.order_tree.get_children())
+        keyword = self.order_search_var.get().strip().lower() if hasattr(self, "order_search_var") else ""
         for o in self.orders:
+            if keyword:
+                row_text = " ".join(str(v) for v in [
+                    o["date"], o["name"], o["address"], o["phone"],
+                    o["product"], o["option"], o["quantity"], o["message"],
+                    o["vendor"] or "", o["item_name"] or ""
+                ]).lower()
+                if keyword not in row_text:
+                    continue
             if o["excluded"]:
                 tag = "excluded"
             elif o["vendor"]:
@@ -761,6 +775,13 @@ class App(tk.Tk):
         ex_frame = ttk.LabelFrame(self.tab_settings, text="비대상 상품 (발주 제외 품목)")
         ex_frame.pack(fill="x", padx=10, pady=10)
 
+        ex_search_frame = ttk.Frame(ex_frame)
+        ex_search_frame.pack(fill="x", padx=5, pady=2)
+        ttk.Label(ex_search_frame, text="검색:").pack(side="left")
+        self.excluded_search_var = tk.StringVar()
+        self.excluded_search_var.trace_add("write", lambda *_: self._refresh_excluded_list())
+        ttk.Entry(ex_search_frame, textvariable=self.excluded_search_var, width=30).pack(side="left", padx=5)
+
         ex_list_frame = ttk.Frame(ex_frame)
         ex_list_frame.pack(fill="x", padx=5, pady=2)
         ex_vsb = ttk.Scrollbar(ex_list_frame, orient="vertical")
@@ -768,8 +789,7 @@ class App(tk.Tk):
         ex_vsb.config(command=self.excluded_list.yview)
         self.excluded_list.pack(side="left", fill="x", expand=True)
         ex_vsb.pack(side="right", fill="y")
-        for item in sorted(self.config_data.get("excluded_products", [])):
-            self.excluded_list.insert("end", item)
+        self._refresh_excluded_list()
 
         ex_input = ttk.Frame(ex_frame)
         ex_input.pack(fill="x", padx=5, pady=2)
@@ -777,6 +797,13 @@ class App(tk.Tk):
         self.excluded_entry.pack(side="left", padx=2)
         ttk.Button(ex_input, text="추가", command=self._add_excluded).pack(side="left", padx=2)
         ttk.Button(ex_input, text="선택 삭제", command=self._del_excluded).pack(side="left", padx=2)
+
+    def _refresh_excluded_list(self):
+        self.excluded_list.delete(0, "end")
+        keyword = self.excluded_search_var.get().strip().lower() if hasattr(self, "excluded_search_var") else ""
+        for item in sorted(self.config_data.get("excluded_products", [])):
+            if not keyword or keyword in item.lower():
+                self.excluded_list.insert("end", item)
 
     def _add_excluded(self):
         kw = self.excluded_entry.get().strip()
@@ -786,8 +813,8 @@ class App(tk.Tk):
             self.config_data["excluded_products"] = []
         if kw not in self.config_data["excluded_products"]:
             self.config_data["excluded_products"].append(kw)
-            self.excluded_list.insert("end", kw)
             save_config(self.config_data)
+            self._refresh_excluded_list()
         self.excluded_entry.delete(0, "end")
 
     def _del_excluded(self):
@@ -796,8 +823,8 @@ class App(tk.Tk):
             return
         kw = self.excluded_list.get(sel[0])
         self.config_data.get("excluded_products", []).remove(kw)
-        self.excluded_list.delete(sel[0])
         save_config(self.config_data)
+        self._refresh_excluded_list()
 
     def _save_settings(self):
         self.config_data["settings"]["default_manager"] = self.set_mgr.get().strip()
